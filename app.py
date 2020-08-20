@@ -7,6 +7,8 @@ from pdf2image import convert_from_path
 import tika
 tika.initVM()
 from tika import parser
+import constants
+import re
 
 pytesseract.pytesseract.tesseract_cmd = 'tesseract'
 
@@ -15,6 +17,20 @@ app = Flask(__name__)
 UPLOAD_FOLDER = os.path.basename('.')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+import re
+
+API_KEY='AIzaSyB7XCd1ctu3ES0ip39CLBoUw1FnnCjBXwY'
+CX = '41ed5a39744540b57'
+
+def contains_word(text, word):
+    return bool(re.search(r'\b' + re.escape(word) + r'\b', text, re.IGNORECASE))
+
+def get_traits(text):
+    traits = []
+    for word in (constants.RACES + constants.CLASSES):
+       if contains_word(text, word):
+            traits.append(word) 
+    return traits
 
 @app.route('/')
 def index():
@@ -24,7 +40,7 @@ def index():
 @app.route('/api/ocr', methods=['POST','GET'])
 def upload_file():
     if request.method == "GET":
-        return "This is the api BLah blah"
+        return "This is the api"
     elif request.method == "POST":
         file = request.files['image']
 
@@ -33,11 +49,15 @@ def upload_file():
         # add your custom code to check that the uploaded file is a valid image and not a malicious file (out-of-scope for this post)
         file.save(f)
         text = ''
+        traits = []
         if file_extension == '.pdf':
             parsed = parser.from_file(file.filename)
-            print(len(parsed['content']))
-            if len(parsed['content']):
+            text = parsed['content']
+            traits = get_traits(text)
+
+            if len(text) > 0 and len(get_traits(text)) > 0:
                 text = parsed['content']
+                filename = file.filename
             else:
                 pages = convert_from_path(file.filename, 500) 
                   
@@ -96,7 +116,7 @@ def upload_file():
 
             # check to see if we should apply thresholding to preprocess the
             # image
-            preprocess = request.form.get('preprocess', 'Thresh')
+            preprocess = request.form.get('preprocess', 'Blur')
             if  preprocess == "thresh":
                 gray = cv2.threshold(gray, 0, 255,
                                      cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
@@ -114,8 +134,12 @@ def upload_file():
             # the temporary file
             # print("C:/Users/mzm/PycharmProjects/My_website/ocr_using_video/"+filename,Image.open("C:\\Users\mzm\PycharmProjects\My_website\ocr_using_video\\"+filename))
             text = pytesseract.image_to_string(Image.open(filename))
-        os.remove(file.filename)
+        os.remove(filename)
+        if len(traits) == 0:
+            traits = get_traits(text)
+
         print("Text in Image :\n",text.strip())
+        print("Traits in Image :\n", )
 
         return jsonify({"text" : text.strip()})
 
