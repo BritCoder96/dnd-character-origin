@@ -84,13 +84,12 @@ def upload_file():
                 text = text.replace('-\n', '')
         else:
             image = cv2.imread(UPLOAD_FOLDER+"/"+file.filename)
-            print(image)
             os.remove(UPLOAD_FOLDER+"/"+file.filename)
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
             # check to see if we should apply thresholding to preprocess the
             # image
-            preprocess = request.form["preprocess"]
+            preprocess = request.form.get('preprocess', 'Thresh')
             if  preprocess == "thresh":
                 gray = cv2.threshold(gray, 0, 255,
                                      cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
@@ -100,7 +99,6 @@ def upload_file():
 
             elif preprocess == "blur":
                 gray = cv2.medianBlur(gray, 3)
-            print(preprocess)
             # write the grayscale image to disk as a temporary file so we can
             # apply OCR to it
             filename = "{}.png".format(os.getpid())
