@@ -4,6 +4,9 @@ from flask import Flask, render_template, request,jsonify
 from PIL import Image
 import sys 
 from pdf2image import convert_from_path 
+import tika
+tika.initVM()
+from tika import parser
 
 pytesseract.pytesseract.tesseract_cmd = 'tesseract'
 
@@ -29,59 +32,63 @@ def upload_file():
         filename, file_extension = os.path.splitext(file.filename)
         # add your custom code to check that the uploaded file is a valid image and not a malicious file (out-of-scope for this post)
         file.save(f)
-        # print(file.filename)
         text = ''
         if file_extension == '.pdf':
-            pages = convert_from_path(file.filename, 500) 
-              
-            # Counter to store images of each page of PDF to image 
-            image_counter = 1
-              
-            # Iterate through all the pages stored above 
-            for page in pages: 
-              
-                # Declaring filename for each page of PDF as JPG 
-                # For each page, filename will be: 
-                # PDF page 1 -> page_1.jpg 
-                # PDF page 2 -> page_2.jpg 
-                # PDF page 3 -> page_3.jpg 
-                # .... 
-                # PDF page n -> page_n.jpg 
-                filename = "page_"+str(image_counter)+".jpg"
+            parsed = parser.from_file(file.filename)
+            print(len(parsed['content']))
+            if len(parsed['content']):
+                text = parsed['content']
+            else:
+                pages = convert_from_path(file.filename, 500) 
                   
-                # Save the image of the page in system 
-                page.save(filename, 'JPEG') 
-              
-                # Increment the counter to update filename 
-                image_counter = image_counter + 1
-              
-            # Variable to get count of total number of pages 
-            filelimit = image_counter-1
-              
-            # Iterate from 1 to total number of pages 
-            for i in range(1, filelimit + 1): 
-              
-                # Set filename to recognize text from 
-                # Again, these files will be: 
-                # page_1.jpg 
-                # page_2.jpg 
-                # .... 
-                # page_n.jpg 
-                filename = "page_"+str(i)+".jpg"
+                # Counter to store images of each page of PDF to image 
+                image_counter = 1
+                  
+                # Iterate through all the pages stored above 
+                for page in pages: 
+                  
+                    # Declaring filename for each page of PDF as JPG 
+                    # For each page, filename will be: 
+                    # PDF page 1 -> page_1.jpg 
+                    # PDF page 2 -> page_2.jpg 
+                    # PDF page 3 -> page_3.jpg 
+                    # .... 
+                    # PDF page n -> page_n.jpg 
+                    filename = "page_"+str(image_counter)+".jpg"
                       
-                # Recognize the text as string in image using pytesserct 
-                text = str(((pytesseract.image_to_string(Image.open(filename))))) 
-              
-                # The recognized text is stored in variable text 
-                # Any string processing may be applied on text 
-                # Here, basic formatting has been done: 
-                # In many PDFs, at line ending, if a word can't 
-                # be written fully, a 'hyphen' is added. 
-                # The rest of the word is written in the next line 
-                # Eg: This is a sample text this word here GeeksF- 
-                # orGeeks is half on first line, remaining on next. 
-                # To remove this, we replace every '-\n' to ''. 
-                text = text.replace('-\n', '')
+                    # Save the image of the page in system 
+                    page.save(filename, 'JPEG') 
+                  
+                    # Increment the counter to update filename 
+                    image_counter = image_counter + 1
+                  
+                # Variable to get count of total number of pages 
+                filelimit = image_counter-1
+                  
+                # Iterate from 1 to total number of pages 
+                for i in range(1, filelimit + 1): 
+                  
+                    # Set filename to recognize text from 
+                    # Again, these files will be: 
+                    # page_1.jpg 
+                    # page_2.jpg 
+                    # .... 
+                    # page_n.jpg 
+                    filename = "page_"+str(i)+".jpg"
+                          
+                    # Recognize the text as string in image using pytesserct 
+                    text = str(((pytesseract.image_to_string(Image.open(filename))))) 
+                  
+                    # The recognized text is stored in variable text 
+                    # Any string processing may be applied on text 
+                    # Here, basic formatting has been done: 
+                    # In many PDFs, at line ending, if a word can't 
+                    # be written fully, a 'hyphen' is added. 
+                    # The rest of the word is written in the next line 
+                    # Eg: This is a sample text this word here GeeksF- 
+                    # orGeeks is half on first line, remaining on next. 
+                    # To remove this, we replace every '-\n' to ''. 
+                    text = text.replace('-\n', '')
         else:
             image = cv2.imread(UPLOAD_FOLDER+"/"+file.filename)
             os.remove(UPLOAD_FOLDER+"/"+file.filename)
@@ -107,10 +114,10 @@ def upload_file():
             # the temporary file
             # print("C:/Users/mzm/PycharmProjects/My_website/ocr_using_video/"+filename,Image.open("C:\\Users\mzm\PycharmProjects\My_website\ocr_using_video\\"+filename))
             text = pytesseract.image_to_string(Image.open(filename))
-        os.remove(filename)
-        print("Text in Image :\n",text)
+        os.remove(file.filename)
+        print("Text in Image :\n",text.strip())
 
-        return jsonify({"text" : text})
+        return jsonify({"text" : text.strip()})
 
 app.run("0.0.0.0",5000,threaded=True,debug=True)
 
