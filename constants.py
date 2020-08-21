@@ -1,4 +1,4 @@
-RACES = [
+RACES = {"type": 'races', "traits": [
     'Dwarf',
     'Elf',
     'Gnome'
@@ -22,9 +22,9 @@ RACES = [
     'Tengu',
     'Tiefling',
     'Undine'
-]
+]}
 
-CLASSES = [
+CLASSES = {"type": 'classes', "traits": [
     'Alchemist',
     'Barbarian',
     'Bard',
@@ -45,13 +45,13 @@ CLASSES = [
     'Sorcerer',
     'Witch',
     'Wizard'
-]
+]}
 
-GENDERS = [
+GENDERS = {"type": 'genders', "traits": [
 	'male',
 	'female',
 	'nonbinary',
 	'genderfluid'
-]
+]}
 
-TRAITS = GENDERS + CLASSES + RACES
+TRAITS = [GENDERS, CLASSES, RACES]
