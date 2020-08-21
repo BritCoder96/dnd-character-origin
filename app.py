@@ -9,6 +9,9 @@ tika.initVM()
 from tika import parser
 import constants
 import re
+import requests
+import urllib.parse
+
 
 pytesseract.pytesseract.tesseract_cmd = 'tesseract'
 
@@ -27,7 +30,7 @@ def contains_word(text, word):
 
 def get_traits(text):
     traits = []
-    for word in (constants.RACES + constants.CLASSES):
+    for word in (constants.TRAITS):
        if contains_word(text, word):
             traits.append(word) 
     return traits
@@ -139,7 +142,10 @@ def upload_file():
             traits = get_traits(text)
 
         print("Text in Image :\n",text.strip())
-        print("Traits in Image :\n", )
+        print("Traits in Image :\n", (', ').join(traits))
+        query = urllib.parse.quote("dnd character " + (' ').join(traits))
+        r = requests.get("https://www.googleapis.com/customsearch/v1?key=AIzaSyB7XCd1ctu3ES0ip39CLBoUw1FnnCjBXwY&cx=41ed5a39744540b57&q=" + query + "&searchType=image&safe=off")
+        print("search results:", r.json() )
 
         return jsonify({"text" : text.strip()})
 
