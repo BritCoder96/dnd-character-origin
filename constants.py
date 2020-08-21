@@ -24,7 +24,7 @@ RACES = [
     'Undine'
 ]
 
-CLASSES= [
+CLASSES = [
     'Alchemist',
     'Barbarian',
     'Bard',
@@ -46,3 +46,12 @@ CLASSES= [
     'Witch',
     'Wizard'
 ]
+
+GENDERS = [
+	'male',
+	'female',
+	'nonbinary',
+	'genderfluid'
+]
+
+TRAITS = GENDERS + CLASSES + RACES
