@@ -30,9 +30,13 @@ def contains_word(text, word):
 
 def get_traits(text):
     traits = []
-    for word in (constants.TRAITS):
-       if contains_word(text, word):
-            traits.append(word) 
+    for trait_category in (constants.TRAITS):
+        included_already = False
+        for word in trait_category["traits"]:
+            if (not (trait_category["type"] == 'races' and included_already)) and contains_word(text, word):
+                traits.append(word)
+                included_already = trait_category["type"] == 'races'
+
     return traits
 
 @app.route('/')
@@ -100,7 +104,7 @@ def upload_file():
                     filename = "page_"+str(i)+".jpg"
                           
                     # Recognize the text as string in image using pytesserct 
-                    text = str(((pytesseract.image_to_string(Image.open(filename))))) 
+                    text += str(((pytesseract.image_to_string(Image.open(filename))))) 
                   
                     # The recognized text is stored in variable text 
                     # Any string processing may be applied on text 
@@ -112,6 +116,9 @@ def upload_file():
                     # orGeeks is half on first line, remaining on next. 
                     # To remove this, we replace every '-\n' to ''. 
                     text = text.replace('-\n', '')
+                    if os.path.exists(filename):
+                        os.remove(filename)
+
         else:
             image = cv2.imread(UPLOAD_FOLDER+"/"+file.filename)
             os.remove(UPLOAD_FOLDER+"/"+file.filename)
@@ -137,17 +144,20 @@ def upload_file():
             # the temporary file
             # print("C:/Users/mzm/PycharmProjects/My_website/ocr_using_video/"+filename,Image.open("C:\\Users\mzm\PycharmProjects\My_website\ocr_using_video\\"+filename))
             text = pytesseract.image_to_string(Image.open(filename))
-        os.remove(filename)
+        if os.path.exists(filename):
+            os.remove(filename)
         if len(traits) == 0:
             traits = get_traits(text)
 
         print("Text in Image :\n",text.strip())
         print("Traits in Image :\n", (', ').join(traits))
         query = urllib.parse.quote("dnd character " + (' ').join(traits))
-        r = requests.get("https://www.googleapis.com/customsearch/v1?key=AIzaSyB7XCd1ctu3ES0ip39CLBoUw1FnnCjBXwY&cx=41ed5a39744540b57&q=" + query + "&searchType=image&safe=off")
-        print("search results:", r.json() )
+        response = requests.get("https://www.googleapis.com/customsearch/v1?key=AIzaSyB7XCd1ctu3ES0ip39CLBoUw1FnnCjBXwY&cx=41ed5a39744540b57&q=" + query + "&searchType=image&safe=off&n=20").json()
+        print("search results:", response)
+        response = list(map(lambda image: image["link"], response["items"]))
+        print("search results links:", response)
 
-        return jsonify({"text" : text.strip()})
+        return {"text": response}
 
 app.run("0.0.0.0",5000,threaded=True,debug=True)
 
