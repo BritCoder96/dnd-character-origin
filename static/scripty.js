@@ -106,7 +106,9 @@ $(function() {
      success: function(data)
      {
          console.log(data.text);
-         var text = data.text.split('\n').join('<br/>');
+         var text = data.text.map(function (text) {
+            return("<img height='300' width='300' src='" + text + "'></img>");
+         }).join('<br/>');
          $("body").append('<div class="container">\n' +
              '      <div class="row">\n' +
              '          <div class="col-sm-2"></div>\n' +
