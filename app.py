@@ -1,29 +1,23 @@
 from distutils.core import setup
-import os,cv2,pytesseract
+import os, sys, cv2, tempfile, pytesseract, tika, re, requests, urllib.parse,uuid
 from flask import Flask, render_template, request,jsonify
 from PIL import Image
-import sys 
 from pdf2image import convert_from_path 
-import tika
-tika.initVM()
 from tika import parser
 import constants
-import re
-import requests
-import urllib.parse
+import credentials
 
+tika.initVM()
 
 pytesseract.pytesseract.tesseract_cmd = 'tesseract'
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = os.path.basename('.')
+UPLOAD_FOLDER = os.path.join(tempfile.gettempdir())
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-import re
-
-API_KEY='AIzaSyB7XCd1ctu3ES0ip39CLBoUw1FnnCjBXwY'
-CX = '41ed5a39744540b57'
+def full_file_path(filename, hex):
+    return os.path.join(app.config['UPLOAD_FOLDER'], hex + filename)
 
 def contains_word(text, word):
     return bool(re.search(r'\b' + re.escape(word) + r'\b', text, re.IGNORECASE))
@@ -50,23 +44,21 @@ def upload_file():
         return "This is the api"
     elif request.method == "POST":
         file = request.files['image']
-
-        f = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        hex = uuid.uuid4().hex
+        f = full_file_path(file.filename, hex)
         filename, file_extension = os.path.splitext(file.filename)
-        # add your custom code to check that the uploaded file is a valid image and not a malicious file (out-of-scope for this post)
         file.save(f)
         text = ''
         traits = []
         if file_extension == '.pdf':
-            parsed = parser.from_file(file.filename)
+            parsed = parser.from_file(f)
             text = parsed['content']
             traits = get_traits(text)
 
             if len(text) > 0 and len(get_traits(text)) > 0:
                 text = parsed['content']
-                filename = file.filename
             else:
-                pages = convert_from_path(file.filename, 500) 
+                pages = convert_from_path(f, 500)
                   
                 # Counter to store images of each page of PDF to image 
                 image_counter = 1
@@ -81,11 +73,10 @@ def upload_file():
                     # PDF page 3 -> page_3.jpg 
                     # .... 
                     # PDF page n -> page_n.jpg 
-                    filename = "page_"+str(image_counter)+".jpg"
-                      
+                    split_filename = full_file_path("page_" + str(image_counter) + ".jpg", hex)
                     # Save the image of the page in system 
-                    page.save(filename, 'JPEG') 
-                  
+                    page.save(split_filename, 'JPEG')
+
                     # Increment the counter to update filename 
                     image_counter = image_counter + 1
                   
@@ -101,10 +92,10 @@ def upload_file():
                     # page_2.jpg 
                     # .... 
                     # page_n.jpg 
-                    filename = "page_"+str(i)+".jpg"
+                    split_filename = full_file_path("page_" + str(i) + ".jpg", hex)
                           
-                    # Recognize the text as string in image using pytesserct 
-                    text += str(((pytesseract.image_to_string(Image.open(filename))))) 
+                    # Recognize the text as string in image using pytesserct
+                    text += str(((pytesseract.image_to_string(Image.open(split_filename)))))
                   
                     # The recognized text is stored in variable text 
                     # Any string processing may be applied on text 
@@ -112,16 +103,13 @@ def upload_file():
                     # In many PDFs, at line ending, if a word can't 
                     # be written fully, a 'hyphen' is added. 
                     # The rest of the word is written in the next line 
-                    # Eg: This is a sample text this word here GeeksF- 
-                    # orGeeks is half on first line, remaining on next. 
-                    # To remove this, we replace every '-\n' to ''. 
                     text = text.replace('-\n', '')
-                    if os.path.exists(filename):
-                        os.remove(filename)
+                    if os.path.exists(split_filename):
+                        os.remove(split_filename)
 
         else:
             image = cv2.imread(UPLOAD_FOLDER+"/"+file.filename)
-            os.remove(UPLOAD_FOLDER+"/"+file.filename)
+            os.remove(f)
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
             # check to see if we should apply thresholding to preprocess the
@@ -142,20 +130,20 @@ def upload_file():
             cv2.imwrite(filename, gray)
             # load the image as a PIL/Pillow image, apply OCR, and then delete
             # the temporary file
-            # print("C:/Users/mzm/PycharmProjects/My_website/ocr_using_video/"+filename,Image.open("C:\\Users\mzm\PycharmProjects\My_website\ocr_using_video\\"+filename))
             text = pytesseract.image_to_string(Image.open(filename))
-        if os.path.exists(filename):
-            os.remove(filename)
+        if os.path.exists(f):
+            os.remove(f)
         if len(traits) == 0:
-            traits = get_traits(text)
+            traits = list(map(lambda x:x.lower(),get_traits(text)))
 
-        print("Text in Image :\n",text.strip())
+        if 'male' in traits:
+            traits.append('-female')
+
         print("Traits in Image :\n", (', ').join(traits))
-        query = urllib.parse.quote("dnd character " + (' ').join(traits))
-        response = requests.get("https://www.googleapis.com/customsearch/v1?key=AIzaSyB7XCd1ctu3ES0ip39CLBoUw1FnnCjBXwY&cx=41ed5a39744540b57&q=" + query + "&searchType=image&safe=off&n=20").json()
+        query = urllib.parse.quote("dnd character image -mini -sheet -stats " + (' ').join(traits))
+        response = requests.get("https://www.googleapis.com/customsearch/v1/siterestrict?key=" + credentials.GOOGLE_API_KEY + "&cx=" + credentials.GOOGLE_CX + "&q=" + query + "&searchType=image&safe=off&num=10").json()
         print("search results:", response)
         response = list(map(lambda image: image["link"], response["items"]))
-        print("search results links:", response)
 
         return {"text": response}
 
