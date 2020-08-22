@@ -5,11 +5,13 @@ RACES = {"type": 'races', "traits": [
     'Half-Elf',
     'Half-Orc',
     'Halfling',
-    'HUMAN',
+    'Hobbit',
+    'Human',
     'Aasimar',
     'Catfolk',
     'Dhampir',
     'Drow',
+    'Dragonborn',
     'Fetchling',
     'Goblin',
     'Hobgoblin',
@@ -21,7 +23,9 @@ RACES = {"type": 'races', "traits": [
     'Sylph',
     'Tengu',
     'Tiefling',
-    'Undine'
+    'Undine',
+    'Forge',
+    'Warforge'
 ]}
 
 CLASSES = {"type": 'classes', "traits": [

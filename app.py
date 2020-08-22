@@ -108,7 +108,7 @@ def upload_file():
                         os.remove(split_filename)
 
         else:
-            image = cv2.imread(UPLOAD_FOLDER+"/"+file.filename)
+            image = cv2.imread(f)
             os.remove(f)
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -134,8 +134,7 @@ def upload_file():
         if os.path.exists(f):
             os.remove(f)
         if len(traits) == 0:
-            traits = list(map(lambda x:x.lower(),get_traits(text)))
-
+            traits = get_traits(text)
         if 'male' in traits:
             traits.append('-female')
 
