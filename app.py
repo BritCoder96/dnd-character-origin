@@ -19,18 +19,27 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def full_file_path(filename, hex):
     return os.path.join(app.config['UPLOAD_FOLDER'], hex + filename)
 
-def contains_word(text, word):
-    return bool(re.search(r'\b' + re.escape(word) + r'\b', text, re.IGNORECASE))
-
-def get_traits(text):
+def get_traits(text, reverse):
     traits = []
+    regex = re.compile('[^a-zA-Z\n ]')
+    text = regex.sub('', text)
+    split_text = text.lower().split()
+    if reverse:
+        split_text.reverse()
     for trait_category in (constants.TRAITS):
-        included_already = False
-        for word in trait_category["traits"]:
-            if (not (trait_category["type"] == 'races' and included_already)) and contains_word(text, word):
-                traits.append(word)
-                included_already = trait_category["type"] == 'races'
-
+        split_traits = set(map(lambda trait: trait.lower(), trait_category['traits']))
+        words = list(split_traits & set(split_text))
+        if len(words) > 0 and trait_category["type"] == 'races':
+            if trait_category["type"] == 'races':
+                min_trait_index = sys.maxsize
+                min_trait = []
+                for trait in words:
+                    index = split_text.index(trait)
+                    if index < min_trait_index:
+                        min_trait_index = index
+                        min_trait = trait
+                words = [min_trait]
+        traits += words
     return traits
 
 @app.route('/')
@@ -53,11 +62,9 @@ def upload_file():
         if file_extension == '.pdf':
             parsed = parser.from_file(f)
             text = parsed['content']
-            traits = get_traits(text)
-
-            if len(text) > 0 and len(get_traits(text)) > 0:
-                text = parsed['content']
-            else:
+            traits = get_traits(text, True)
+            if not (len(text) > 0 and len(traits) > 0):
+                text = ''
                 pages = convert_from_path(f, 500)
                   
                 # Counter to store images of each page of PDF to image 
@@ -81,7 +88,7 @@ def upload_file():
                     image_counter = image_counter + 1
                   
                 # Variable to get count of total number of pages 
-                filelimit = image_counter-1
+                filelimit = image_counter - 1
                   
                 # Iterate from 1 to total number of pages 
                 for i in range(1, filelimit + 1): 
@@ -96,7 +103,6 @@ def upload_file():
                           
                     # Recognize the text as string in image using pytesserct
                     text += str(((pytesseract.image_to_string(Image.open(split_filename)))))
-                  
                     # The recognized text is stored in variable text 
                     # Any string processing may be applied on text 
                     # Here, basic formatting has been done: 
@@ -126,7 +132,7 @@ def upload_file():
                 gray = cv2.medianBlur(gray, 3)
             # write the grayscale image to disk as a temporary file so we can
             # apply OCR to it
-            filename = "{}.png".format(os.getpid())
+            filename = full_file_path("{}.png".format(os.getpid()), '')
             cv2.imwrite(filename, gray)
             # load the image as a PIL/Pillow image, apply OCR, and then delete
             # the temporary file
@@ -134,17 +140,17 @@ def upload_file():
         if os.path.exists(f):
             os.remove(f)
         if len(traits) == 0:
-            traits = get_traits(text)
+            traits = get_traits(text, False)
         if 'male' in traits:
             traits.append('-female')
 
         print("Traits in Image :\n", (', ').join(traits))
         query = urllib.parse.quote("dnd character image -mini -sheet -stats " + (' ').join(traits))
-        response = requests.get("https://www.googleapis.com/customsearch/v1/siterestrict?key=" + credentials.GOOGLE_API_KEY + "&cx=" + credentials.GOOGLE_CX + "&q=" + query + "&searchType=image&safe=off&num=10").json()
+        response = requests.get("https://www.googleapis.com/customsearch/v1/siterestrict?key=" + credentials.GOOGLE_API_KEY + "&cx=" + credentials.GOOGLE_CX + "&q=" + query + "&searchType=image&safe=off&num=10&filter=1").json()
         print("search results:", response)
         response = list(map(lambda image: image["link"], response["items"]))
 
-        return {"text": response}
+        return {"text": response, "traits": traits}
 
 app.run("0.0.0.0",5000,threaded=True,debug=True)
 
