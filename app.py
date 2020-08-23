@@ -21,13 +21,13 @@ def full_file_path(filename, hex):
 
 def get_traits(text, reverse):
     traits = []
-    regex = re.compile('[^a-zA-Z\n ]')
+    regex = re.compile('[^a-zA-Z\n -]')
     text = regex.sub('', text)
     split_text = text.lower().split()
     if reverse:
         split_text.reverse()
     for trait_category in (constants.TRAITS):
-        split_traits = set(map(lambda trait: trait.lower(), trait_category['traits']))
+        split_traits = set(trait_category['traits'])
         words = list(split_traits & set(split_text))
         if len(words) > 0 and trait_category["type"] == 'races':
             if trait_category["type"] == 'races':
