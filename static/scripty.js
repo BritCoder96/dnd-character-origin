@@ -1,4 +1,4 @@
-$(document).on('click', '#close-preview', function(){
+$(document).on('click', '#close-preview', function() {
     $('.image-preview').popover('hide');
     // Hover befor close the preview
     $('.image-preview').hover(
@@ -37,7 +37,7 @@ $(function() {
         $(".image-preview-input-title").text("Browse");
     });
     // Create the preview image
-    $(".image-preview-input input:file").change(function (){
+    $(".image-preview-input input:file").change(function () {
         var img = $('<img/>', {
             id: 'dynamic',
             width:250,
@@ -56,88 +56,36 @@ $(function() {
         reader.readAsDataURL(file);
     });
 
-//     $("form").submit(function(e) {
-//         // var formData = new FormData(document.querySelector('form'));
-//         // formData.append("preprocess",$("input:radio[name='preprocess']:checked").val());
-//         var form = document.querySelector('form');
-//   var formData = new FormData(form);
-// var params = {};
-// for (var [key, value] of formData.entries()) {
-//   // console.log(key, value);
-//   params[key] = value;
-// }
-// console.log(params);
-//
-//         $.ajax({
-//             url: "/api/ocr",
-//             type: "POST",
-//             data: params,
-//             async: false,
-//             success: function (msg) {
-//                 alert(msg)
-//             },
-//             cache: false,
-//             contentType: false,
-//             processData: false
-//         });
-//         alert("dkf");
-//         e.preventDefault();
-//     });
-
-
     $("#form").submit(function(e) {
-    var formData = new FormData(document.querySelector('#form'));
-
-    // $.post($(this).attr("action"), formData, function(data) {
-    //     alert(data);
-    // });
-        console.log(formData);
+        var formData = new FormData(document.querySelector('#form'));
 
         $.ajax({
-     type: 'POST',
-     url: '/api/ocr',
-     data: formData,
-     processData: false,
-     contentType: false ,
-     // beforeSend: function()
-     // {
-     //     alert('Fetching....');
-     // },
-     success: function(data)
-     {
-         var text = data.text.map(function (text) {
-            return("<img height='300' width='300' src='" + text + "'></img>");
-         }).join('<br/>');
-         $("body").append('<div class="container">\n' +
-             '      <div class="row">\n' +
-             '          <div class="col-sm-2"></div>\n' +
-             '          <div class="col-sm-8">\n' +
-             '  <div class="alert alert-success" role="alert">\n' +
-             '  <h4 class="alert-heading">Image contains text :</h4>\n' +
-             '  <!--<p>Aww yeah, you successfully read this important alert message. This example text is going to run a bit longer so that you can see how spacing within an alert works with this kind of content.</p>-->\n' +
-             '  <hr>\n' +
-             '  <p class="mb-0">' + text + '</p>\n' +
-             '</div>\n' +
-             '          </div>\n' +
-             '          <div class="col-sm-2"></div>\n' +
-             '      </div>\n' +
-             '  </div>');
-     },
-     error: function(err)
-     {
-         alert(err);
-     }
- });
-    e.preventDefault();
-
-});
-
-    $('#show_api').click(function () {
-        var newtext = " Api end point \nCscurl -i -X POST -F files=@test.png http://127.0.0.1:5000/api/ocrCC";
-        var obj  = $('#chntxt').text(newtext);
-        obj.html(obj.html().replace(/\n/g,'<br/>'));
-        obj.html(obj.html().replace(/Cs/g,'<code>'));
-        obj.html(obj.html().replace(/CC/g,'<code/>'));
+            type: 'POST',
+            url: '/process_character_sheet',
+            data: formData,
+            processData: false,
+            contentType: false ,
+            success: function(data) {
+                 var text = data.text.map(function (text) {
+                    return("<img height='300' width='300' src='" + text + "'></img>");
+                 }).join('<br/>');
+                 $("body").append('<div class="container">\n' +
+                     '      <div class="row">\n' +
+                     '          <div class="col-sm-2"></div>\n' +
+                     '          <div class="col-sm-8">\n' +
+                     '  <div class="alert alert-success" role="alert">\n' +
+                     '  <h2 class="alert-heading">Generated character images:</h2>\n' +
+                     '  <hr>\n' +
+                     '  <p class="mb-0">' + text + '</p>\n' +
+                     '</div>\n' +
+                     '          </div>\n' +
+                     '          <div class="col-sm-2"></div>\n' +
+                     '      </div>\n' +
+                     '  </div>');
+             }, error: function(err) {
+                 console.log(err);
+             }
+        });
+        e.preventDefault();
     });
-
 });
