@@ -1,6 +1,6 @@
 # can use request module
 import requests
-api = "http://localhost:5000/api/ocr"
+api = "http://localhost:5000/process_character_sheet"
 files = {'image': open('../ocr_using_video/test.png', 'rb')}
 
 # preprocess = blur or thresh
