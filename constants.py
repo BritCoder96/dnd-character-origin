@@ -2,6 +2,8 @@ RACES = {"type": 'races', "traits": [
     'dwarf',
     'elf',
     'gnome',
+    'wood elf',
+    'high elf',
     'half-elf',
     'half-orc',
     'halfling',
