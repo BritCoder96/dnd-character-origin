@@ -66,26 +66,36 @@ $(function() {
             processData: false,
             contentType: false ,
             success: function(data) {
-                 var text = data.text.map(function (text) {
-                    return("<img height='300' width='300' src='" + text + "'></img>");
-                 }).join('<br/>');
-                 $("body").append('<div class="container">\n' +
-                     '      <div class="row">\n' +
-                     '          <div class="col-sm-2"></div>\n' +
-                     '          <div class="col-sm-8">\n' +
-                     '  <div class="alert alert-success" role="alert">\n' +
-                     '  <h2 class="alert-heading">Generated character images:</h2>\n' +
-                     '  <hr>\n' +
-                     '  <p class="mb-0">' + text + '</p>\n' +
-                     '</div>\n' +
-                     '          </div>\n' +
-                     '          <div class="col-sm-2"></div>\n' +
-                     '      </div>\n' +
-                     '  </div>');
-             }, error: function(err) {
-                 console.log(err);
-             }
+                var ts = Date.now(), img = new Image;
+                var text = data.text.map(function (text) {
+                    return("<img height='300' width='300' onerror=\"onError('" + text + "', " + ts + ")\" src='" + text + "'></img>");
+                }).join('<br/>');
+                $("body").append('<div class="container">\n' +
+                    '      <div class="row">\n' +
+                    '          <div class="col-sm-2"></div>\n' +
+                    '          <div class="col-sm-8">\n' +
+                    '  <div class="alert alert-success" role="alert">\n' +
+                    '  <h2 class="alert-heading">Generated character images:</h2>\n' +
+                    '  <hr>\n' +
+                    '  <p class="mb-0">' + text + '</p>\n' +
+                    '</div>\n' +
+                    '          </div>\n' +
+                    '          <div class="col-sm-2"></div>\n' +
+                    '      </div>\n' +
+                    '  </div>');
+            }, error: function(err) {
+                console.log(err);
+            }
         });
         e.preventDefault();
     });
 });
+
+function onError(src, ts) {
+    console.log(this);
+    if (Date.now() - ts < 10000) {
+        setTimeout(function() { this.src = src; }, 1000);
+    } else {
+        this.style.display = 'none'; 
+    }
+}

@@ -113,17 +113,7 @@ def upload_file():
         os.remove(f)
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        # check to see if we should apply thresholding to preprocess the
-        # image
-        preprocess = request.form.get('preprocess', 'Blur')
-        if  preprocess == "thresh":
-            gray = cv2.threshold(gray, 0, 255,
-                                 cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-
-        # make a check to see if median blurring should be done to remove noise
-
-        elif preprocess == "blur":
-            gray = cv2.medianBlur(gray, 3)
+        gray = cv2.medianBlur(gray, 3)
         # write the grayscale image to disk as a temporary file so we can
         # apply OCR to it
         filename = full_file_path("{}.png".format(os.getpid()), '')
@@ -143,7 +133,7 @@ def upload_file():
     query = urllib.parse.quote("dnd character image " + (' ').join(traits) + ' -'+ (' -').join(exclude_terms))
     response = requests.get("https://www.googleapis.com/customsearch/v1/siterestrict?key=" + credentials.GOOGLE_API_KEY + "&cx=" + credentials.GOOGLE_CX + "&q=" + query + "&searchType=image&safe=off&num=10&filter=1&excludeTerms=" + ('|').join(exclude_terms)).json()
     print("search results:", response)
-    response = list(map(lambda image: image["link"], response["items"]))
+    response = list(map(lambda image: image["link"].split("?cb=",maxsplit=1)[0] if image['link'][0 : 34] == "https://static.wikia.nocookie.net/" else image["link"], response["items"]))
 
     return {"text": response, "traits": traits}
 
