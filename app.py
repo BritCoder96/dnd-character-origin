@@ -5,6 +5,7 @@ from PIL import Image
 from pdf2image import convert_from_path 
 from tika import parser
 import constants
+# Credentials are stored on the local environment for security.
 import credentials
 
 tika.initVM()
